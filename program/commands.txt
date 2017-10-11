@@ -1,0 +1,4 @@
+commands:
+N1 = node1:start(1).
+N2 = node1:start(2, N1).
+N3 = node1:start(3, N1).
