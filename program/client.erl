@@ -23,13 +23,14 @@ client(Name, Keys) ->
             lookup(Key, Npid),
             client(Name, Keys);
         {Key, ok, Id} ->
-            io:format("~w: Inserted ~w into ~w~n", [Name, Key, Id]),
+            io:format("~w: Qref ~w into ~w~n", [Name, Key, Id]),
             client(Name, [Key|Keys]);
         {Qref, {Key, Value}, Id} ->
             io:format("~w: Lookup from ~w with ~w: value ~w~n", [Name, Id, Key, Value]),
             client(Name, Keys);
         {_, false, Id} ->
-            io:format("~w responsible, but didn't find it.~n",[Id]);
+            io:format("~w responsible, but didn't find it.~n",[Id]),
+            client(Name, Keys);
         Msg ->
             io:format("Uncaught message: ~w~n",[Msg])
     end.

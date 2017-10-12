@@ -77,7 +77,7 @@ down(Ref, Predecessor, {_, Ref, _}, {Nkey, _, Npid}) ->
 add(Key, Value, Qref, Client, Id, {Pkey,_, _}, {_, _, Spid}, Store) ->
     case key:between(Key, Pkey, Id) of
         true ->
-            Client ! {Key, ok, Id},
+            Client ! {Qref, ok, Id},
             storage:add(Key, Value, Store);
         false ->
             Spid ! {add, Key, Value, Qref, Client},
