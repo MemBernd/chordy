@@ -6,14 +6,15 @@
 
 
 node(Id, Predecessor, Successor, Store) ->
+    %io:format("~w: Pred: ~w, Succ: ~w~n", [Id, Predecessor, Successor]),
     receive
         {key, Qref, Peer} ->
             Peer ! {Qref, Id},
             node(Id, Predecessor, Successor, Store);
 
         {notify, New} ->
-            Pred = notify(New, Id, Predecessor, Store),
-            node(Id, Pred, Successor, Store);
+            {Pred, Keep} = notify(New, Id, Predecessor, Store),
+            node(Id, Pred, Successor, Keep);
 
         {request, Peer} ->
             request(Peer, Predecessor),
@@ -50,7 +51,7 @@ node(Id, Predecessor, Successor, Store) ->
 add(Key, Value, Qref, Client, Id, {Pkey, _}, {_, Spid}, Store) ->
     case key:between(Key, Pkey, Id) of
         true ->
-            Client ! {Qref, ok},
+            Client ! {Key, ok, Id},
             storage:add(Key, Value, Store);
         false ->
             Spid ! {add, Key, Value, Qref, Client},
@@ -60,7 +61,7 @@ lookup(Key, Qref, Client, Id, {Pkey, _}, Successor, Store) ->
     case key:between(Key, Pkey, Id) of
         true ->
             Result = storage:lookup(Key, Store),
-            Client ! {Qref, Result};
+            Client ! {Qref, Result, Id};
         false ->
             {_, Spid} = Successor,
             Spid ! {lookup, Key, Qref, Client}
@@ -85,6 +86,7 @@ stabilize(Pred, Id, Successor) ->
         {Xkey, Xpid} ->
             case key:between(Xkey, Id, Skey) of
                 true ->
+                    io:format("~w better Successor; key ~w pid ~w~n",[Id, Xkey, Xpid]),
                     Xpid ! {request, self()},
                     receive
                         {status, XPred} ->
@@ -134,7 +136,7 @@ start(Id, Peer) ->
 init(Id, Peer) ->
     Predecessor = nil,
     {ok, Successor} = connect(Id, Peer),
-schedule_stabilize(),
+    schedule_stabilize(),
     node(Id, Predecessor, Successor, storage:create()).
 
 connect(Id, nil) ->

@@ -17,7 +17,8 @@ split(From, To, Store) ->
                 {[{Key, Value}|Updated], Rest};
             true ->
                 {Updated, [{Key, Value}|Rest]}
-        end, {[],[]}, Store).
+        end
+    end, {[],[]}, Store).
 
 merge(Entries, Store) ->
     Entries ++ Store.
