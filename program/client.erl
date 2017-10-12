@@ -27,7 +27,11 @@ client(Name, Keys) ->
             client(Name, [Key|Keys]);
         {Qref, {Key, Value}, Id} ->
             io:format("~w: Lookup from ~w with ~w: value ~w~n", [Name, Id, Key, Value]),
-            client(Name, Keys)
+            client(Name, Keys);
+        {_, false, Id} ->
+            io:format("~w responsible, but didn't find it.~n",[Id]);
+        Msg ->
+            io:format("Uncaught message: ~w~n",[Msg])
     end.
 
 insertRange(From, To, Npid) when To >= From ->

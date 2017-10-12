@@ -91,6 +91,8 @@ stabilize(Pred, Id, Successor) ->
                     receive
                         {status, XPred} ->
                             stabilize(XPred, Id, {Xkey, Xpid})
+                        after ?Timeout ->
+                            io:format("better successor timed out.~n",[])
                     end;
                 false ->
                     Spid ! {notify, {Id, self()}},
@@ -154,7 +156,8 @@ connect(Id, Peer) ->
 create_probe(Id, {Skey, Spid}) ->
     Spid ! {probe, Id, [Id], erlang:system_time(micro_seconds)}.
 remove_probe(T, Nodes) ->
-    io:format("Time passed: ~w~nNodes passed: ~w~n", [T, Nodes]).
+    Time = erlang:system_time(micro_seconds) - T,
+   io:format("Time passed: ~w~nNodes passed: ~w~n", [Time, Nodes]).
 forward_probe(Ref, T, Nodes, Id, {Skey, Spid}) ->
     io:format("~w: Probe message from ~w passing by.~n", [Id, Ref]),
     Spid ! {probe, Ref, [Id|Nodes], T}.
