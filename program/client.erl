@@ -6,31 +6,42 @@ start(Name) ->
     spawn(fun() -> init(Name, []) end).
 
 init(Name, Keys) ->
-    client(Name, Keys).
+    client(Name, Keys, nil).
 
-client(Name, Keys) ->
+client(Name, Keys, Time) ->
+    case Keys of
+        [] ->
+            Last = nil;
+        [_] ->
+            Last = lists:last(Keys)
+        end,
     receive
         {insertRange, From, To, Npid} ->
             insertRange(From, To, Npid),
-            client(Name, Keys);
+            client(Name, Keys, Time);
         {insert, Key, Value, Npid} ->
             insert(Key, Value, Npid),
-            client(Name, [Keys]);
+            client(Name, Keys, Time);
         {lookupList, Npid} ->
+            Ti = erlang:system_time(micro_seconds),
             lookupList(Keys, Npid),
-            client(Name, Keys);
+            client(Name, Keys, Ti);
         {lookup, Key, Npid} ->
             lookup(Key, Npid),
-            client(Name, Keys);
+            client(Name, Keys, Time);
         {Key, ok, Id} ->
             io:format("~w: Qref ~w into ~w~n", [Name, Key, Id]),
-            client(Name, [Key|Keys]);
+            client(Name, [Key|Keys], Time);
+        {Qref, {Last, Value}, Id} ->
+            Tfinal = erlang:system_time(micro_seconds) - Time,
+            io:format("~w: All keys returned after ~w~n", [Name, Tfinal]),
+            client(Name, Keys, nil);
         {Qref, {Key, Value}, Id} ->
             io:format("~w: Lookup from ~w with ~w: value ~w~n", [Name, Id, Key, Value]),
-            client(Name, Keys);
+            client(Name, Keys, Time);
         {_, false, Id} ->
             io:format("~w responsible, but didn't find it.~n",[Id]),
-            client(Name, Keys);
+            client(Name, Keys, Time);
         Msg ->
             io:format("Uncaught message: ~w~n",[Msg])
     end.

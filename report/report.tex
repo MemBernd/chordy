@@ -1,4 +1,7 @@
 % Very simple template for lab reports. Most common packages are already included.
+% !TeX spellcheck = en_US
+\documentclass[a4paper, 11pt]{article}
+\usepackage[utf8]{inputenc} % Change according your file encoding
 \usepackage{graphicx}
 \usepackage{url}
 \usepackage{enumitem}
@@ -20,19 +23,65 @@
 \maketitle
 
 \section{Introduction}
+Distributed Hast tables are about retrieving a value associated with a given key.
+The purpose is to distribute load over several servers, which can be geographically far away from each other.
+It's suppose to handle high churn rates while still providing the service.
+The tolerable churn rate depends on the implementation, mostly regarding the amount of replications.
+This determines the amount of _sequential_ nodes which can fail simultaneously with the DHT continuing to work.
+The network can be handled either _structured_ or _unstructured_.
+Without going much into the details, _structured_ offers simpler lookups with the cost of having to maintain the network wich introduces overhead.
+_Unstructured_ on the other hand doesn't have an overhead, but the lookups are more complex, thus more expensive.
 
+DHT only handles inserts and lookups of values associated with a key.
+The application which uses the DHT manages the data.
 
 
 \section{Main problems and solutions}
 \subsection{Questions in the report}
 What does \textit{From} possibly being greater than \textit{To} mean?
-\\
+\\DHT is based on a ring architecture. To close it, the _last_ and _first_ node have to be connected.
+Therefore _From_ may be greater than _To_.
 
 
-What does it mean that \textit{Xkey} is equal to _Skey_, will it ever happen?
-\\
 
-
-What are the pros and cons of a more frequent stabilizing procedure? 
+What are the pros and cons of a more frequent stabilizing procedure?
 What is delayed if we don't do stabilizing that often?
-\end{document}
+\\ The acceptance of new nodes as Successor. A new node joining gets established as _predecessor_, but unless _stabilize/1_ is executed, this nodes doesn't get used as a _successor_.
+
+
+What would happen if we didn't schedule the stabilize procedure? Would things still work?
+\\It could work to an arbitrary degree. Not executing _stabilize/1_ means no adding of joined nodes as _successor_.
+The exception is when a node is added, since it will  acquire a successor in the process.
+This means that the first node will point to itself and the line of predecessor will be correct.
+Therefore the ``ring'' isn't closed.
+
+Which part should be kept and which part should be handed over?
+\\All the pairs with keys being less than or equal to the new predecessors ID.
+
+
+What will happen if a node is falsely detected of being dead?
+\\Assuming it's predecessor and successor detect it, they will close the ring between them.
+Should the presumably dead node return, it will eventually, thanks to the schedule_stabilize_ integrate itself in the ring.
+\subsection{Problems}
+Throughout the coding several difficulties were encountered. Most of them were because of syntax issues.
+Therefore it's unnecessary to include them in this report.
+Logic issues which appeared were because of differences in the proposed code and the written one. e.g. passing the _Next_ node as the las argument rather than some intermediary.
+
+ \section{Performance}
+For testing purposes, a _client.erl_ file was created which works differently than _test.erl_.
+The main difference is that it doesn't wait for a confirmation.
+If a collection of values is inserted, it sends all request and processes each confirmation which includes the inserted key.
+This results in a possible mixing of inserting and acknowledging of keys.
+Additionally the keys are inserted in a sequential run, not random.
+This gives less room for randomness to influence the behavior.
+Although not measured, assumptions can be made about the behavior of the system while several nodes being present.
+\begin{itemize}
+    \item When dealing with larger hash tables, the local lookup function is probably the most cpu intensive task.
+    Since the nodes work in one process, i.e. the same process is in charge of routing messages or looking up a function, a node won't forward a lookup request while it's locally looking up a key.
+    \item If, on the other hand, the network latency is the major impact, then the increased amount of nodes won't decrease the lookup rate proportionally.
+\end{itemize}
+
+\section{Conclusion}
+Distributed Hash Tables don't seem to focus on reducing response time, rather than on distributing workloads.
+This isn't to say that it doesn't reduce average response time, which it does, but it's more of an desirable side effect.
+ \end{document}
